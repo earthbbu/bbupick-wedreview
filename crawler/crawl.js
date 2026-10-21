@@ -68,7 +68,9 @@ function pageHint(status, text) {
   if (/cloudflare|just a moment|cf-chl|challenge/i.test(t)) flags.push('봇 확인 화면');
   if (/captcha|recaptcha|hcaptcha/i.test(t)) flags.push('캡차');
   if (/access denied|forbidden|접근이\s?(차단|제한)|해외\s?(IP|접속)|허용되지 않은/i.test(t)) flags.push('접근 차단 안내');
-  return `HTTP ${status}, ${t.length.toLocaleString()}자, 제목 "${title.replace(/\s+/g, ' ').trim().slice(0, 40)}"${flags.length ? `, ${flags.join('·')}` : ''}, 내용 "${body.slice(0, 60)}"`;
+  // 아주 짧은 페이지는 원래 글자를 그대로 남겨서 무엇을 받았는지 볼 수 있게 해요
+  const raw = t.length < 3000 ? `, 원문 ${JSON.stringify(t.replace(/\s+/g, ' ').slice(0, 700))}` : '';
+  return `HTTP ${status}, ${t.length.toLocaleString()}자, 제목 "${title.replace(/\s+/g, ' ').trim().slice(0, 40)}"${flags.length ? `, ${flags.join('·')}` : ''}, 내용 "${body.slice(0, 60)}"${raw}`;
 }
 
 const robotsCache = new Map();
@@ -135,7 +137,7 @@ async function crawlSite(site) {
 }
 
 async function main() {
-  console.log('수집기 버전 2026-10-22 (실패 이유 표시 · 6곳씩 차례로)');
+  console.log('수집기 버전 2026-10-22b (실패 이유 표시 · 6곳씩 차례로)');
   const [prevPath, outPath] = process.argv.slice(2);
   let prev = { items: [] };
   try { prev = JSON.parse(fs.readFileSync(prevPath, 'utf8')); } catch { /* 첫 실행 */ }

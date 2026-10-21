@@ -381,14 +381,9 @@ module.exports = [
     lists: ['blog_go', 'blog_go1', 'reviewsell'].map((b) => `https://www.tojobcn.com/bbs/board.php?bo_table=${b}`),
     // 게시판이 3개라 '게시판+글번호'를 공고 번호로 씁니다
     detail: /tojobcn\.com\/bbs\/board\.php\?bo_table=((?:blog_go1?|reviewsell)&wr_id=\d+)/,
+    titleSelector: 'h2 > div:last-of-type > span',
   },
-  {
-    key: 'tagby',
-    name: '태그바이',
-    home: 'https://tagby.io',
-    lists: ['https://tagby.io/recruit'],
-    detail: /tagby\.io\/recruit\/(\d+)/,
-  },
+  // 태그바이: 2026-10 확인 결과 목록이 화면에서 스크립트로 그려지는 방식으로 바뀌어 잠시 뺐어요.
   {
     key: 'openreview',
     name: '오픈리뷰',
