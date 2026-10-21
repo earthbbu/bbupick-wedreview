@@ -135,6 +135,7 @@ async function crawlSite(site) {
 }
 
 async function main() {
+  console.log('수집기 버전 2026-10-22 (실패 이유 표시 · 6곳씩 차례로)');
   const [prevPath, outPath] = process.argv.slice(2);
   let prev = { items: [] };
   try { prev = JSON.parse(fs.readFileSync(prevPath, 'utf8')); } catch { /* 첫 실행 */ }
@@ -144,7 +145,18 @@ async function main() {
   const now = new Date().toISOString();
   const today = kstDate();
   const reports = [];
-  const results = await Promise.all(SITES.map((s) => crawlSite(s).catch((e) => ({ report: { key: s.key, name: s.name, home: s.home, ok: false, found: 0, pages: 0, skipped: [], error: e.message }, items: [] }))));
+  // 한꺼번에 50곳을 열지 않고, 6곳씩 차례로 열어요 (접속이 몰려 실패하는 걸 막고 사이트 부담도 줄여요)
+  const CONCURRENCY = 6;
+  const results = new Array(SITES.length);
+  let next = 0;
+  async function worker() {
+    while (next < SITES.length) {
+      const i = next++;
+      const s = SITES[i];
+      results[i] = await crawlSite(s).catch((e) => ({ report: { key: s.key, name: s.name, home: s.home, ok: false, found: 0, pages: 0, skipped: [], error: why(e) }, items: [] }));
+    }
+  }
+  await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 
   for (const [i, { report, items }] of results.entries()) {
     const site = SITES[i];
