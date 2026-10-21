@@ -46,6 +46,31 @@ async function fetchText(url, extra = {}, method = 'GET', body) {
   }
 }
 
+// 실패 이유를 알아보기 쉽게 바꿔요 (어디서 막혔는지 기록용)
+const CAUSE = {
+  ECONNRESET: '연결이 끊김', ECONNREFUSED: '연결 거부', ETIMEDOUT: '연결 시간 초과', ENOTFOUND: '주소를 찾을 수 없음',
+  EAI_AGAIN: '주소 조회 실패', UND_ERR_CONNECT_TIMEOUT: '연결 시간 초과', UND_ERR_SOCKET: '연결이 끊김',
+  CERT_HAS_EXPIRED: '보안 인증서 만료', UNABLE_TO_VERIFY_LEAF_SIGNATURE: '보안 인증서 확인 실패', ERR_TLS_CERT_ALTNAME_INVALID: '보안 인증서 불일치',
+};
+function why(e) {
+  if (!e) return '';
+  if (e.name === 'AbortError') return '응답 시간 초과(20초)';
+  const c = e.cause && (e.cause.code || (e.cause.cause && e.cause.cause.code));
+  if (c) return `${CAUSE[c] || '접속 오류'} ${c}`;
+  return (e.cause && e.cause.message) || e.message || String(e);
+}
+// 공고가 0건일 때 받은 페이지가 어떤 모습이었는지 짧게 남겨요
+function pageHint(status, text) {
+  const t = String(text || '');
+  const title = (t.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || '';
+  const body = t.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const flags = [];
+  if (/cloudflare|just a moment|cf-chl|challenge/i.test(t)) flags.push('봇 확인 화면');
+  if (/captcha|recaptcha|hcaptcha/i.test(t)) flags.push('캡차');
+  if (/access denied|forbidden|접근이\s?(차단|제한)|해외\s?(IP|접속)|허용되지 않은/i.test(t)) flags.push('접근 차단 안내');
+  return `HTTP ${status}, ${t.length.toLocaleString()}자, 제목 "${title.replace(/\s+/g, ' ').trim().slice(0, 40)}"${flags.length ? `, ${flags.join('·')}` : ''}, 내용 "${body.slice(0, 60)}"`;
+}
+
 const robotsCache = new Map();
 async function getRobots(url) {
   const origin = new URL(url).origin;
@@ -53,16 +78,24 @@ async function getRobots(url) {
     const robotsUrl = origin + '/robots.txt';
     let body = '';
     let failed = false;
-    try {
-      const r = await fetchText(robotsUrl);
-      if (r.status >= 200 && r.status < 300) body = r.text;
-      else if (r.status >= 500) { body = 'User-agent: *\nDisallow: /'; failed = true; } // 서버 오류면 이번엔 쉬어갑니다
-    } catch {
-      body = 'User-agent: *\nDisallow: /';
-      failed = true;
+    let reason = '';
+    for (let attempt = 0; attempt < 2; attempt++) { // 한 번 실패하면 3초 뒤 한 번 더
+      failed = false; reason = '';
+      try {
+        const r = await fetchText(robotsUrl);
+        if (r.status >= 200 && r.status < 300) body = r.text;
+        else if (r.status >= 500) { body = 'User-agent: *\nDisallow: /'; failed = true; reason = `robots.txt HTTP ${r.status}`; } // 서버 오류면 이번엔 쉬어갑니다
+      } catch (e) {
+        body = 'User-agent: *\nDisallow: /';
+        failed = true;
+        reason = `robots.txt ${why(e)}`;
+      }
+      if (!failed) break;
+      await sleep(3000);
     }
     const parser = robotsParser(robotsUrl, body);
     parser.__failed = failed;
+    parser.__reason = reason;
     robotsCache.set(origin, parser);
   }
   return robotsCache.get(origin);
@@ -73,12 +106,12 @@ async function crawlSite(site) {
   const found = new Map();
   for (const url of site.lists) {
     const robots = await getRobots(url);
-    if (robots.__failed) { report.error = '사이트에 접속하지 못해 이번 회차는 건너뛰었어요'; continue; }
+    if (robots.__failed) { report.error = `사이트에 접속하지 못해 이번 회차는 건너뛰었어요 (${robots.__reason})`; continue; }
     if (robots.isAllowed(url, BOT) === false) { report.skipped.push(url); continue; }
     const delay = Math.max(DELAY_MS, (robots.getCrawlDelay(BOT) || 0) * 1000);
     try {
       const { status, text } = await fetchText(url, site.headers, site.method || 'GET', site.body);
-      if (status !== 200) throw new Error(`HTTP ${status}`);
+      if (status !== 200) throw new Error(`HTTP ${status} (${pageHint(status, text)})`);
       let items;
       if (site.fromJson) {
         items = site.fromJson(JSON.parse(text), url);
@@ -87,15 +120,17 @@ async function crawlSite(site) {
         items = site.parse ? site.parse(document, url) : extractCampaigns(document, url, site);
       }
       for (const it of items) if (!found.has(it.id)) found.set(it.id, it);
+      if (!items.length && !report.hint) report.hint = `${url} → ${site.fromJson ? `HTTP ${status}, ${text.length.toLocaleString()}자, 내용 "${text.replace(/\s+/g, ' ').slice(0, 80)}"` : pageHint(status, text)}`;
       report.pages++;
     } catch (e) {
-      report.error = `${url} → ${e.name === 'AbortError' ? '응답 시간 초과' : e.message}`;
+      report.error = `${url} → ${String(e.message).startsWith('HTTP') ? e.message : why(e)}`;
     }
     await sleep(delay);
   }
   report.found = found.size;
   report.ok = report.pages > 0 && found.size > 0;
-  if (report.pages > 0 && found.size === 0 && !report.error) report.error = '목록은 열렸지만 공고를 찾지 못했어요 (사이트 구조가 바뀌었을 수 있어요)';
+  if (report.pages > 0 && found.size === 0 && !report.error) report.error = `목록은 열렸지만 공고를 찾지 못했어요 (받은 페이지: ${report.hint || '-'})`;
+  delete report.hint;
   return { report, items: [...found.values()] };
 }
 
