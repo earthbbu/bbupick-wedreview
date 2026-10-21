@@ -1,0 +1,16 @@
+{
+  "name": "지구쀼체험단 - 웨딩·신혼 체험단 알리미",
+  "short_name": "지구쀼체험단",
+  "description": "여러 체험단 사이트의 새 공고를 1시간마다 모아, 내 키워드와 지역에 맞는 것만 보여줘요.",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fef9ee",
+  "theme_color": "#f3effb",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

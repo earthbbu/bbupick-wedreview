@@ -1,0 +1,51 @@
+name: 체험단 자동 수집
+
+on:
+  schedule:
+    - cron: '7 * * * *'   # 매시 7분마다 (GitHub 사정에 따라 몇 분 늦어질 수 있어요)
+  workflow_dispatch:       # Actions 화면에서 "Run workflow" 버튼으로 바로 실행
+
+permissions:
+  contents: write
+
+concurrency:
+  group: crawl
+  cancel-in-progress: false
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 필요한 도구 설치
+        run: npm ci --omit=dev
+
+      - name: 지난번 수집 결과 불러오기
+        run: |
+          if git fetch origin data --depth=1 2>/dev/null; then
+            git show origin/data:campaigns.json > prev.json
+          else
+            echo '{}' > prev.json
+          fi
+
+      - name: 체험단 사이트 수집
+        run: node crawler/crawl.js prev.json out/campaigns.json
+
+      - name: 결과 저장 (data 브랜치)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd out
+          git init -q
+          git checkout -q -b data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add campaigns.json
+          git commit -q -m "수집 $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data

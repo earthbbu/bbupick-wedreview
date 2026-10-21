@@ -1,0 +1,14 @@
+{
+  "name": "chehum-alimi",
+  "version": "1.0.0",
+  "description": "체험단 공고 자동 수집 + 키워드·지역 알리미",
+  "scripts": {
+    "crawl": "node crawler/crawl.js prev.json out/campaigns.json",
+    "test": "node crawler/test-extract.js"
+  },
+  "dependencies": {
+    "linkedom": "^0.18.13",
+    "robots-parser": "^3.0.1"
+  },
+  "private": true
+}
