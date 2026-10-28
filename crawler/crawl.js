@@ -137,7 +137,7 @@ async function crawlSite(site) {
 }
 
 async function main() {
-  console.log('수집기 버전 2026-10-22b (실패 이유 표시 · 6곳씩 차례로)');
+  console.log('수집기 버전 2026-10-22c (실패 이유 표시 · 6곳씩 차례로)');
   const [prevPath, outPath] = process.argv.slice(2);
   let prev = { items: [] };
   try { prev = JSON.parse(fs.readFileSync(prevPath, 'utf8')); } catch { /* 첫 실행 */ }
@@ -185,7 +185,8 @@ async function main() {
 
   const minSeen = Date.now() - KEEP_DAYS * 86400e3;
   const yesterday = kstDate(-1);
-  let items = [...byKey.values()].filter((x) => Date.parse(x.ls) >= minSeen && (!x.dl || x.dl >= yesterday));
+  // 목록에서 뺀 사이트의 예전 공고는 지우고, 오래 안 보인 공고·마감 지난 공고도 정리해요
+  let items = [...byKey.values()].filter((x) => spaceOf[x.s] && Date.parse(x.ls) >= minSeen && (!x.dl || x.dl >= yesterday));
   items.sort((a, b) => (a.f < b.f ? 1 : a.f > b.f ? -1 : 0));
   items = items.slice(0, MAX_ITEMS);
 

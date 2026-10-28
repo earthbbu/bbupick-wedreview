@@ -111,28 +111,6 @@ module.exports = [
     titleSelector: 'span',
   },
   {
-    key: 'cloudreview',
-    name: '클라우드리뷰',
-    home: 'https://www.cloudreview.co.kr',
-    lists: [
-      'https://www.cloudreview.co.kr/',
-      'https://www.cloudreview.co.kr/campaign/blog',
-      'https://www.cloudreview.co.kr/campaign/instagram',
-      'https://www.cloudreview.co.kr/campaign/short',
-    ],
-    detail: /cloudreview\.co\.kr\/campaign\/detail\/(\d+)/,
-    titleSelector: 'div.truncate',
-  },
-  {
-    key: 'modublog',
-    name: '모블',
-    home: 'https://www.modublog.co.kr',
-    // robots.txt가 첫 화면만 허용
-    lists: ['https://www.modublog.co.kr/'],
-    detail: /modublog\.co\.kr\/product\/(\d+)/,
-    titleSelector: '.c_title',
-  },
-  {
     key: 'tble',
     name: '티블',
     home: 'https://tble.kr',
@@ -265,24 +243,6 @@ module.exports = [
     },
   },
   {
-    key: 'dailyview',
-    name: '데일리뷰',
-    home: 'https://dailyview.kr',
-    lists: ['https://dailyview.kr/', 'https://dailyview.kr/review_campaign_list.php',
-      ...['001A', '002A', '373A', '396A', '399A'].map((c) => `https://dailyview.kr/review_campaign_list.php?category_id=${c}`)],
-    detail: /dailyview\.kr\/review_campaign\.php\?cp_id=(\d+)/,
-    titleSelector: '.it_name',
-  },
-  {
-    key: 'chehumdan',
-    name: '체험단닷컴',
-    home: 'https://chehumdan.com',
-    lists: ['https://chehumdan.com/', 'https://chehumdan.com/category.php?category=829', 'https://chehumdan.com/category.php?category=832'],
-    detail: /chehumdan\.com\/detail\.php\?number=(\d+)/,
-    titleSelector: '.list-tit',
-    regionSelector: '.list-day',
-  },
-  {
     // 체블: 첫 화면이 불러오는 공개 목록 데이터(최신순·마감임박순)를 읽어요. robots.txt 제한 없음.
     key: 'cheble',
     name: '체블',
@@ -383,6 +343,7 @@ module.exports = [
     detail: /tojobcn\.com\/bbs\/board\.php\?bo_table=((?:blog_go1?|reviewsell)&wr_id=\d+)/,
     titleSelector: 'h2 > div:last-of-type > span',
   },
+  // 클라우드리뷰·모블·데일리뷰·체험단닷컴·요깃지·메타체험단: 2026-10 확인 결과 호스팅 업체의 봇 차단 화면(CUPID 쿠키 확인)만 내려줘서 뺐어요.
   // 태그바이: 2026-10 확인 결과 목록이 화면에서 스크립트로 그려지는 방식으로 바뀌어 잠시 뺐어요.
   {
     key: 'openreview',
@@ -393,19 +354,7 @@ module.exports = [
     titleSelector: '.card-title',
     closedRe: /^(\d+\s)?마감\s/, // 카드 앞 배지가 '마감'이면 끝난 공고
   },
-  {
-    // 체험단이 아니라 지자체·공공기관의 여행 지원(여행비 환급, 숙박 할인, 워케이션 등) 모음입니다.
-    // 신혼여행·여행 키워드로 찾을 때 함께 보이도록 넣었습니다.
-    key: 'masil',
-    name: '마실(여행지원)',
-    home: 'https://masil.io',
-    lists: [1, 2, 3, 4, 5, 6, 7, 8].map((p) => (p === 1 ? 'https://masil.io/programs' : `https://masil.io/programs?page=${p}`)),
-    detail: /masil\.io\/programs\/([0-9a-f-]{36})/,
-    titleSelector: 'h3',
-    regionSelector: '.text-campaign',
-    fixedType: '여행지원',
-    closedRe: /(^|\s)마감(?!\s?임박)\s/,
-  },
+  // 마실(지자체 여행지원)은 2026-10-23 요청으로 뺐어요.
   // ───── 2026-10 추가: 다른 모아보기 사이트들이 모으는 곳 중 robots.txt가 허용하는 곳 ─────
   {
     key: 'keyplat',
@@ -435,29 +384,12 @@ module.exports = [
     titleSelector: '.it_name',
   },
   {
-    key: 'yogitg',
-    name: '요깃지',
-    home: 'https://yogitg.co.kr',
-    lists: ['https://yogitg.co.kr/', 'https://yogitg.co.kr/review_campaign_list.php'],
-    detail: /yogitg\.co\.kr\/review_campaign\.php\?cp_id=(\d+)/,
-    titleSelector: '.it_name',
-  },
-  {
     // 상세 페이지(campaign.php)는 robots.txt로 막혀 있어 열지 않고, 목록만 읽어요.
     key: 'reviewwave',
     name: '리뷰웨이브',
     home: 'https://www.reviewwave.kr',
     lists: ['https://www.reviewwave.kr/', 'https://www.reviewwave.kr/campaign_list.php?category_id=002A'],
     detail: /reviewwave\.kr\/campaign\.php\?cp_id=(\d+)/,
-    titleSelector: '.it_name',
-  },
-  {
-    // 목록 페이지는 주요 검색엔진에 막아둬서 첫 화면만 읽어요.
-    key: 'metachehum',
-    name: '메타체험단',
-    home: 'https://meta-chehumdan.com',
-    lists: ['https://meta-chehumdan.com/'],
-    detail: /meta-chehumdan\.com\/campaign\.php\?cp_id=(\d+)/,
     titleSelector: '.it_name',
   },
   {
@@ -539,10 +471,11 @@ module.exports = [
         const store = txt(li.querySelector('.pvc_store'));
         const offer = txt(li.querySelector('.pvc_tx strong'));
         const badge = txt(li.querySelector('.pvc_bg'));
+        if (!store) continue; // 목록에 이름 없이 '5,000포인트'만 있는 기자단 카드는 무슨 공고인지 알 수 없어 건너뛰어요
         const it = finish({
           id, url: `https://pavlovu.com/review_campaign.php?cp_id=${id}`,
           title: placeTitle(type === '방문' ? place : '', store || offer, type),
-          desc: store ? offer : '', type, daysLeft: findDaysLeft(badge),
+          desc: [/실시간/.test(badge) ? '실시간 모집' : '', store ? offer : ''].filter(Boolean).join(' · '), type, daysLeft: findDaysLeft(badge),
         });
         const rc = (txt(li.querySelector('.pvc_mt')).match(/(\d+)\s?명/) || [])[1];
         if (rc) it.rcOnly = +rc;
