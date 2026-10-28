@@ -1,6 +1,6 @@
 // 앱처럼 설치하기 위한 최소한의 서비스워커.
 // 화면 파일은 인터넷이 될 때 새로 받고, 안 될 때만 저장해둔 걸 보여줘요. 공고 데이터는 저장하지 않아요.
-const CACHE = 'chehum-alimi-v3';
+const CACHE = 'chehum-alimi-v4';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
