@@ -14,7 +14,7 @@ const BOT = 'ChehumAlimiBot';
 const REPO = process.env.GITHUB_REPOSITORY ? `https://github.com/${process.env.GITHUB_REPOSITORY}` : 'local';
 const UA = `Mozilla/5.0 (compatible; ${BOT}/1.0; +${REPO})`;
 const KEEP_DAYS = 10;        // 마지막으로 목록에서 본 뒤 이 기간이 지나면 정리
-const MAX_ITEMS = 9000;      // 파일이 너무 커지지 않도록 최대 보관 개수
+const MAX_ITEMS = 15000;     // 파일이 너무 커지지 않도록 최대 보관 개수 (한국 서버로 사이트가 늘어 9000→15000)
 const DELAY_MS = 1500;       // 같은 사이트에 연달아 요청할 때 쉬는 시간
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -137,7 +137,7 @@ async function crawlSite(site) {
 }
 
 async function main() {
-  console.log('수집기 버전 2026-10-22c (실패 이유 표시 · 6곳씩 차례로)');
+  console.log('수집기 버전 2026-10-28 (한국 서버 · 최대 15000건)');
   const [prevPath, outPath] = process.argv.slice(2);
   let prev = { items: [] };
   try { prev = JSON.parse(fs.readFileSync(prevPath, 'utf8')); } catch { /* 첫 실행 */ }
